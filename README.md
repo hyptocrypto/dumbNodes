@@ -1,6 +1,6 @@
 # Abstract
 
-The idea here is to play with the idea of VPNs / proxies / distributed networks / key pair cryptography.
+The plan here is to play with the idea of VPNs / proxies / distributed networks / key pair cryptography.
 The server will listen on raw tcp with a custom protocol. Clients will connect, exchange keys, and then send encrypted requests to the server. The server will the execute these requests as https requests to external networks (the internet). This way the server is essentially a vpn/proxy. This should work on LAN and WAN.
 
 # Steps
