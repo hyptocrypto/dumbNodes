@@ -1,0 +1,4 @@
+# Host should be the main server IP
+host: 192.168.7.254
+port: :8888
+protocol: tcp
