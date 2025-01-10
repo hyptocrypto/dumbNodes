@@ -41,13 +41,13 @@ func NewServer() (*Server, error) {
 	return &Server{mu: sync.RWMutex{}, sock: conn, connections: make(types.ClientConnections), closeChn: make(chan bool)}, nil
 }
 
-func (s *Server) GetOrAddClientConnection(host string) (*types.ClientConn, error) {
-	clientID := util.GenerateUUIDForClient(host)
+func (s *Server) GetOrAddClientConnection(c net.Conn) *types.ClientConn {
+	clientID := util.GenerateUUIDForClient(c.RemoteAddr().String())
 	s.mu.RLock()
 	cliCon, ok := s.connections[clientID]
 	s.mu.RUnlock()
 	if ok {
-		return cliCon, nil
+		return cliCon
 	}
 	clientConn := types.ClientConn{
 		ClientId: clientID,
@@ -57,7 +57,7 @@ func (s *Server) GetOrAddClientConnection(host string) (*types.ClientConn, error
 	s.connections[clientID] = &clientConn
 	s.mu.Unlock()
 	fmt.Printf("Added new client connection: %v\n", clientID)
-	return &clientConn, nil
+	return &clientConn
 }
 
 // Close net connection and reset connections
@@ -75,7 +75,8 @@ func (s *Server) Listen() error {
 				fmt.Printf("Error accepting connection: %v\n", err)
 				continue
 			}
-			fmt.Printf("Accepted new connection from: %v. ClientID: %v\n", conn.RemoteAddr().String(), s.praseClientFromConn(conn))
+			clientConn := s.GetOrAddClientConnection(conn)
+			fmt.Printf("Accepted new connection from: %v. ClientID: %v\n", conn.RemoteAddr().String(), clientConn.ClientId)
 
 			go s.handleClientConnection(conn)
 
@@ -83,19 +84,6 @@ func (s *Server) Listen() error {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-}
-
-func (s *Server) praseClientFromConn(c net.Conn) *types.ClientConn {
-	id := util.GenerateUUIDForClient(c.RemoteAddr().String())
-	if c, ok := s.connections[id]; ok {
-		return c
-	}
-	clientConn := types.ClientConn{
-		ClientId: id,
-		Key:      "This is a key",
-	}
-	s.connections[id] = &clientConn
-	return &clientConn
 }
 
 func (s *Server) handleClientConnection(conn net.Conn) error {
