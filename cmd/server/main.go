@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"os"
 	"sync"
@@ -74,7 +75,7 @@ func (s *Server) Listen() error {
 				fmt.Printf("Error accepting connection: %v\n", err)
 				continue
 			}
-			fmt.Printf("Accepted new connection from: %v\n", conn.RemoteAddr().String())
+			fmt.Printf("Accepted new connection from: %v. ClientID: %v\n", conn.RemoteAddr().String(), s.praseClientFromConn(conn))
 
 			go s.handleClientConnection(conn)
 
@@ -82,6 +83,19 @@ func (s *Server) Listen() error {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+}
+
+func (s *Server) praseClientFromConn(c net.Conn) *types.ClientConn {
+	id := util.GenerateUUIDForClient(c.RemoteAddr().String())
+	if c, ok := s.connections[id]; ok {
+		return c
+	}
+	clientConn := types.ClientConn{
+		ClientId: id,
+		Key:      "This is a key",
+	}
+	s.connections[id] = &clientConn
+	return &clientConn
 }
 
 func (s *Server) handleClientConnection(conn net.Conn) error {
@@ -98,7 +112,7 @@ func (s *Server) handleClientConnection(conn net.Conn) error {
 		}
 
 		fmt.Printf("Request parsed: %v\n", *req)
-
+		time.Sleep(time.Duration(rand.Intn(3)) * time.Second)
 		resp, err := mproto.Serialize(types.Response{
 			Headers: map[string]string{"hello": "world"},
 			Data:    []byte("hello"),

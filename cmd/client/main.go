@@ -51,19 +51,25 @@ func (c *Client) SendRequest() error {
 }
 
 func main() {
+	done := make(chan bool)
 	config := config.NewConfig()
-	c, err := NewClient(config)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	for i := 0; i <= 10; i++ {
+		go func() {
+			c, err := NewClient(config)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			for {
+				fmt.Println("Send loop")
+				err := c.SendRequest()
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				time.Sleep(time.Second * 2)
+			}
+		}()
 	}
-	for {
-		fmt.Println("Send loop")
-		err := c.SendRequest()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		time.Sleep(time.Second * 2)
-	}
+	<-done
 }
